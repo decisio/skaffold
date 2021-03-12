@@ -65,7 +65,7 @@ func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds [
 
 	switch {
 	case len(a.Sync.Manual) > 0:
-		return syncItem(a, tag, e, a.Sync.Manual, cfg)
+		return syncItem(a, tag, e, a.Sync.Manual, cfg) // pchen - added a.xtraSyncPaths to support absolute path sync
 
 	case a.Sync.Auto != nil:
 		return autoSyncItem(ctx, a, tag, e, cfg)
@@ -205,9 +205,15 @@ func latestTag(image string, builds []build.Artifact) string {
 
 func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
+	fmt.Printf("__pchen__ contextWd = %v\n", contextWd)
+	fmt.Printf("__pchen__ containerWd = %v\n", containerWd)
+	fmt.Printf("__pchen__ files = %v\n", files)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
+		fmt.Printf("__pchen__ relPath,= %v\n", relPath)
 		if err != nil {
+			// pchen - TODO match extraSyncPath
+			//
 			return nil, fmt.Errorf("changed file %s can't be found relative to context %q: %w", f, contextWd, err)
 		}
 
@@ -335,3 +341,32 @@ func Init(ctx context.Context, artifacts []*latest.Artifact) error {
 	}
 	return nil
 }
+
+// func extraSyncItem(a *latest.Artifact, tag string, e filemon.Events, syncRules []*latest.SyncRule, extraSyncPaths []string, cfg docker.Config) (syncMap, error) {
+// 	containerWd, err := WorkingDir(tag, cfg)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("retrieving working dir for %q: %w", tag, err)
+// 	}
+//     if extraSyncPaths !=nil {
+// 	    for p := range extraSyncPaths {
+//             fmt.printf("__pchen__-> extraPath = %v", p)
+// 		}
+// 	}
+
+// 	toCopy, err := intersect(a.Workspace, containerWd, syncRules, append(e.Added, e.Modified...))
+// 	if err != nil {
+// 		return nil, fmt.Errorf("intersecting sync map and added, modified files: %w", err)
+// 	}
+
+// 	toDelete, err := intersect(a.Workspace, containerWd, syncRules, e.Deleted)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("intersecting sync map and deleted files: %w", err)
+// 	}
+
+// 	// Something went wrong, don't sync, rebuild.
+// 	if toCopy == nil || toDelete == nil {
+// 		return nil, nil
+// 	}
+
+// 	return , nil
+// }

@@ -34,6 +34,7 @@ import (
 func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
 	var (
 		paths []string
+		ext   []string
 		err   error
 	)
 
@@ -74,9 +75,38 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 		return nil, fmt.Errorf("unexpected artifact type %q:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 
+	if len(a.ExtraSyncPaths) > 0 {
+		// pchen Artifact contains ExtraSyncPath for manual sync files with absolute path
+		ext, err = getExtraSyncFiles(a)
+		fmt.Printf("***pchen-->extrapath= %v\n", ext)
+	}
+
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("------------------------------------------------------------------\n")
+	fmt.Printf("__pchen__--->abs pathes %v\n", util.AbsolutePaths(a.Workspace, paths))
 	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func getExtraSyncFiles(a *latest.Artifact) ([]string, error) {
+	var (
+		extrapaths []string
+		files      []string
+		err        error
+	)
+
+	for _, r := range a.Sync.Manual {
+		fmt.Printf("__pchen__--> syncfile = %v\n", r.Src)
+		for _, p := range a.ExtraSyncPaths {
+			fmt.Printf("__pchen__--> extrapath = %v\n", p)
+			if util.IsSubPath(p, r.Src) {
+				// src is part of extra sync path
+				extrapaths = append(extrapaths, r.Src)
+				break
+			}
+		}
+	}
+	files, err = util.ExpandPathsGlob("/", extrapaths)
+	return files, err
 }

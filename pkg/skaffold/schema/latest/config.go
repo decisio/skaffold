@@ -813,6 +813,9 @@ type Artifact struct {
 	// Defaults to `.`.
 	Workspace string `yaml:"context,omitempty" skaffold:"filepath"`
 
+	// pchen add extraSyncPaths to sync extra files
+	ExtraSyncPaths []string `yaml:"extraSyncPaths,omitempty" skaffold:"filepath"`
+
 	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.
 	// If no files are listed, sync all the files and infer the destination.
